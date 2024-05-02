@@ -1,0 +1,75 @@
+import numpy as np
+from sklearn.model_selection import train_test_split
+
+def sigmoid(x):
+    #TODO: Implement sigmoid (hint: use np.exp)
+    return 1 / (1 + np.exp(-x))
+    # pass
+
+def our_accuracy_score(true, predicted):
+    #TODO: Implement an accuracy metric so that is can be used instead of Sklearn's accuracy score
+    #Note: both true and predicted will be boolean numpy array
+    truePred = np.sum(true == predicted)
+    return truePred / len(true)
+	# pass
+ 
+ #IMPORTANT: You can only use numpy here. Do not use any premade algorithms (e.g. Scikit-Learn's Logistic Regression)
+class OurLogisticRegression:
+    def __init__(self, lr: int, epochs: int, probability_threshold: float = 0.5, random_state = None):
+        self.lr = lr # The learning rate
+        self.epochs = epochs # The number of training epochs
+        self.probability_threshold = probability_threshold # If the output of the sigmoid function is > probability_threshold, the prediction is considered to be positive (True)
+                                                           # otherwise, the prediction is considered to be negative (False)
+        self.random_state = random_state # The random state will be used set the random seed for the sake of reproducability
+    
+    def _prepare_input(self, X):
+        # Here, we add a new input with value 1 to each example. It will be multipled by the bias
+        ones = np.ones((X.shape[0], 1), dtype=X.dtype)
+        return np.concatenate((ones, X), axis=1)
+    
+    def _prepare_target(self, y):
+        # Here, we convert True to +1 and False to -1
+        #TODO (Optional): You can modify your function if you wish to used other values for the positive and negative classes
+        return np.where(y, 1, -1)
+
+    def _initialize(self, num_weights: int, stdev: float = 0.01):
+        # Here, we initialize the weights using a normally distributed random variable with a small standard deviation
+        self.w = np.random.randn(num_weights) * stdev
+
+    def _gradient(self, X, y):
+        #TODO: Compute and return the gradient of the weights (self.w) wrt to the loss given the X and y arrays
+        error = y - sigmoid(np.dot(X, self.w))
+        weightGradient = np.dot(-X.T, error)
+        return weightGradient
+		# pass
+
+    def _update(self, X, y):
+        #TODO: Implement this function to apply a single iteration on the weights "self.w"
+        #Hint: use self._gradient
+        gradient = self._gradient(X, y)
+        self.w -= self.lr * gradient
+        pass
+
+    def fit(self, X, y):
+        np.random.seed(self.random_state) # First, we set the seed
+        X = self._prepare_input(X) # Then we prepare the inputs
+        y = self._prepare_target(y) # and prepare the targets too
+        self._initialize(X.shape[1]) # and initialize the weights randomly
+        for _ in range(self.epochs): # Then we update the weights for a certain number of epochs
+            self._update(X, y)
+        return self # Return self to match the behavior of Scikit-Learn's LinearRegression fit()
+    
+    def predict(self, X):
+        X = self._prepare_input(X)
+        #TODO: Implement the rest of this function (Note: It should return a boolean array)
+        return sigmoid(np.dot(X, self.w)) > self.probability_threshold
+    
+
+# Function to tune the hyper parameters
+def validate(lr, epochs, X_train, y_train):
+    validation_size = None #TODO: Choose a size for the validation set as a ratio from the training data
+    X_tr, X_val, y_tr, y_val = train_test_split(X_train, y_train, test_size=validation_size, random_state=42)
+    # We will fit the model to only a subset of the training data and we will use the rest to evaluate the performance
+    our_model = OurLogisticRegression(lr=lr, epochs=epochs, random_state=0).fit(X_tr, y_tr)
+    # Then, we evaluate the peformance using the validation set
+    return our_accuracy_score(y_val, our_model.predict(X_val)) 
