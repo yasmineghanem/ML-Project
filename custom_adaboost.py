@@ -24,7 +24,7 @@ class GenericBoosting:
 
     def create_estimator(self):
         # create a decision stump as a weak estimator
-        return DecisionTreeClassifier(max_depth=1, random_state=0)
+        return DecisionTreeClassifier(max_depth=1, random_state=0, class_weight='balanced')
 
     def fit_and_predict(self, X_train, Y_train, X_test, Y_test, weight_multiplier=1.0):
         # apply AdaBoost on weak estimators
@@ -74,8 +74,7 @@ class GenericBoosting:
             # TODO: update the weights
             # W = W * np.exp(-cls_alpha * Y_train * pred_train_idx)
             # Update the weights with more weight given to misclassified points
-            W = W * np.exp(-cls_alpha * Y_train *
-                           pred_train_idx * miss_indicator_weights)
+            W = W * np.exp(-cls_alpha * Y_train * pred_train_idx * miss_indicator_weights)
 
             # TODO: add to the overall predictions
             # the weighted classifier
@@ -83,6 +82,8 @@ class GenericBoosting:
             pred_test[idx] = cls_alpha * pred_test_idx
 
             # normalize weights
+            # try using balanced wights 
+            # we divide the weights of each class by the sum of the weights in the class
             W = W / np.sum(W)
 
         # TODO: return accuracy on train and test sets
